@@ -2,7 +2,7 @@
 #
 # rebrand-skill.sh
 # Rebrand the using-admin-backend skill to a custom tenant domain and swap the
-# "Wellington" worked-example branding for "ITOPPLUS".
+# "ITOPPLUS" worked-example branding for "ITOPPLUS".
 #
 # Usage:
 #   ./rebrand-skill.sh [TARGET_DOMAIN] [SKILL_DIR]
@@ -21,7 +21,7 @@
 #   * Idempotent: re-running after a rebrand is a no-op (old strings already gone).
 #   * Requires GNU sed (Git Bash on Windows, or Linux). Uses `sed -i`.
 #   * ORDER MATTERS: the host is replaced before the branding, because the old
-#     host contains the word "wellington" — doing branding first would corrupt it.
+#     host contains the word "ITOPPLUS" — doing branding first would corrupt it.
 set -euo pipefail
 
 # -------- args / defaults --------
@@ -30,10 +30,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="${2:-$SCRIPT_DIR}"
 
 # -------- what we replace --------
-OLD_HOST="www.wellingtoncollege.ac.th"   # primary example host
-OLD_HOST_ALT="wellingtoncollege.ac.th"   # bare host (no www), just in case
-OLD_BRAND_LONG="Wellington College"
-OLD_BRAND_SHORT="Wellington"
+OLD_HOST="www.itopplus.com"   # primary example host
+OLD_HOST_ALT="itopplus.com"   # bare host (no www), just in case
+OLD_BRAND_LONG="ITOPPLUS Co.,Ltd"
+OLD_BRAND_SHORT="ITOPPLUS"
 NEW_BRAND="ITOPPLUS"
 
 # Derive the bare host from TARGET_URL (strip scheme, path, trailing slash).
@@ -72,9 +72,9 @@ done < <(find "$SKILL_DIR" -type f -name '*.md')
 
 echo
 echo "Done. $changed of $total markdown file(s) updated."
-echo "Leftover 'wellington' references in *.md (case-insensitive; should be none):"
-if grep -rin --include='*.md' "wellington" "$SKILL_DIR" >/dev/null 2>&1; then
-  grep -rin --include='*.md' "wellington" "$SKILL_DIR"
+echo "Leftover 'ITOPPLUS' references in *.md (case-insensitive; should be none):"
+if grep -rin --include='*.md' "ITOPPLUS" "$SKILL_DIR" >/dev/null 2>&1; then
+  grep -rin --include='*.md' "ITOPPLUS" "$SKILL_DIR"
   exit 2
 else
   echo "  (none)"
