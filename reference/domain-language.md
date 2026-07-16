@@ -50,6 +50,17 @@ Platform-level site settings: the domain/site info shown in the admin sidebar (w
   - Labels: `ScriptRequire/domains/language/menu-by-language/website-setting.js` (`websiteSettingByLangauge`: `generalWebsiteSetting` = "Language Settings", `languageSupportSystem` = "Available languages", `defaultLanguage` = "Default Language", `chooseLanguage`) and `menuSlideBarNameByLanguage.js` (`websiteName`, `expriedDate`, `websiteInfo`, `websiteSettings`, `advancedSettings`).
 - **Save endpoint:** `Localconfig/saveConfig` (C# `LocalConfigController.saveConfig` — `ConfigService.saveConfig(JSON.stringify(config))`). On success it reads `LangEnable.Where(DefaultLang == true)` to set `HtmlHelperExtensions.languageID`, then `updateConfig(jsonObj)`. Front-end flag switch saves nothing to config — it calls `Localconfig/setLanguageAsync`.
 
+## Single-language domain: automatic /langXX URL stripping (feature/single-language-url-strip-lang)
+
+When a domain has **exactly one active language** (`Config.LangEnable.Length == 1`), the server injects `ServerData.bSingleLanguage = true` into the page. The client then:
+
+- Redirects any URL containing a `/langXX` suffix back to the clean URL via `window.location.replace` on page load (`ComponentCtrlV2.js`).
+- Skips appending `/langXX` suffixes when building navigation links (`language.domain.js` `checkSwitchLangIsNotDefaultLanguage` returns `''` when `bSingleLanguage`).
+
+**Result:** Single-language sites never expose `/langTH` or `/langEN` in the URL. No admin setting to toggle — it is derived automatically from the number of enabled languages. To re-enable language suffixes, add a second language in `?manage=true#!/WebConfig` > Available languages.
+
+> Sitemap counterpart (stripping `/langXX` from sitemap.xml entries on single-language domains) lives in the PoolNode branch `feature/single-language-sitemap-strip-lang`.
+
 ## Gotchas / multi-tenant notes
 - **3-cache language-default behavior (known issue).** The "default language" choice is mirrored in three independent stores and all three must agree or the rendered site reverts: (1) Mongo `Config.LangEnable[].DefaultLang`, (2) the C# session "Config", and (3) the app-scope `renderConfig` (`<domain>renderConfig` in `RedisServerType.APPLICATION_SCOPE1`). The app-scope `renderConfig` is what actually drives the rendered language site-wide. `saveConfig` calls `CGClass.ClearRedisAll()` + `CGClass.ClearApplicationScope()` and `setLanguageAsync` patches `renderConfig` directly; if a save drops the language selection the cached config must not be re-cached with the loss (fixed in MRs !1509/!1512 + PoolNode `d1c895a2e`; see memory `project_language_default_three_caches`).
 - **Default fallback language is hardcoded.** When no `LangEnable` entry has `DefaultLang == true`, both the C# save path and the front-end controller fall back to `523d4c71164185981a000001` (Thai). The Thai/English admin-UI ternaries throughout also key off that exact ID.

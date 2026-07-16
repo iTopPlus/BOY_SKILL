@@ -36,7 +36,23 @@ Controls how the site appears to search engines and social shares: the site-wide
 | Keywords (use comma to separate) / คำค้นหาใช้ ,เพื่อแยกคำ(Keywords) | text input (`SelectPageConfig.Keywords`, maxlength 300) | Page meta keywords | — |
 | Menu Display Name (Description) / ชื่อที่แสดงในเมนู(Description) | textarea (`SelectPageConfig.Description`, maxlength 400) | Page meta description | Label text is misleading ("Menu Display Name") but binds to the SEO Description |
 | Menu Display Name (Alt/Title/UrlRewrite) / ชื่อที่แสดงในเมนู(Alt / Title / UrlRewrite) | text input (`SelectPageConfig.URLRewrite`, maxlength 100) | URL-rewrite / alt / title slug for the page | — |
-| Enable Canonical Tag (URL) / เปิดใช้งาน Canonical Tag(URL) | text input (`SelectPageConfig.CanonicalURL`, maxlength 300) | Sets `<link rel="canonical">` for the page | Wrapped in `.bItpCanonical` (visibility may be gated per domain) |
+| Enable Canonical Tag (URL) / เปิดใช้งาน Canonical Tag(URL) | text input (`SelectPageConfig.CanonicalURL`, maxlength 300) | Sets `<link rel="canonical">` for the page. When **left blank**, the system auto-generates a canonical pointing to the clean page URL (stripping `/langXX` suffixes) on every navigation. | Wrapped in `.bItpCanonical` (visibility may be gated per domain). Auto-gen happens in `ComponentCtrlV2.js` `LinkCanonicalCreater`; the page-level override is preferred when filled. |
+
+### Shopcart product — Search Engine (SEO) panel
+| Field (EN / TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| Canonical URL / Canonical Tag URL | text input (`Shopproduct.canonicalTagUrl`, stored via `getQueryString`) | Sets `<link rel="canonical">` for this product's detail page | When left blank, the system auto-generates a canonical pointing to the **product listing page** URL (smart auto-gen — not the detail page URL). Wired in `ScriptRequire/Store/System/Shopcart/Product/AddProduct/Controller.js`. |
+
+### Automatic hreflang (multi-language sites only)
+On sites with **more than one active language**, the system injects a `<link rel="alternate" hreflang="…">` tag into `<head>` for the currently active language. There is **no admin field to fill** — the tag is generated automatically from the canonical URL + the current language's `LocalizationCode`.
+
+| Behaviour | Detail |
+|---|---|
+| When it fires | Only when `LanguageActive.length > 1` (multi-language domain) |
+| `hreflang` value | Current language's `LocalizationCode` (lower-cased), e.g. `th`, `en` |
+| `href` value | Canonical URL of the page, with `/langXX` suffix appended if the current URL path ends in `/langXX` |
+| Placeholder in `<head>` | `<link id="hreflang-current" rel="alternate" hreflang="" href="">` emitted by `_MetaHead.cshtml` only when the domain has >1 active language |
+| Single-language sites | Placeholder is **not** emitted — no hreflang tag appears |
 
 ### Per-page — Additional Settings tab (SEO-relevant fields)
 | Field (EN / TH) | Type | Effect | Gotchas |
@@ -51,6 +67,18 @@ Controls how the site appears to search engines and social shares: the site-wide
 2. Click the **SEO Settings (ตั้งค่า SEO)** tab.
 3. Fill **Title**, **Keywords**, **Description**.
 4. Save (Web Config save bar) — flows to `localconfig/saveConfigAsync`.
+
+### Set Canonical URL for a shopcart product
+1. In the admin go to `?manage=true#!/Shopcart/Product/AddProductsV2/<productId>`.
+2. Open the **Search Engine (SEO)** panel on the product editor.
+3. Fill the **Canonical URL** field. Leave blank to let the system auto-point to the listing page URL.
+4. Save the product.
+
+### Check or verify hreflang (multi-language sites)
+No admin action is required — the tag is auto-injected. To verify:
+1. Open the public site with DevTools Network → view page source or Elements panel.
+2. Look for `<link id="hreflang-current" rel="alternate" hreflang="th" href="…">` (or `en`, etc.) in `<head>`.
+3. The tag only appears on sites with ≥ 2 active languages (set via `?manage=true#!/WebConfig` > Available languages).
 
 ### Add Google Tag Manager / Analytics / Facebook Pixel / remarketing
 1. `?manage=true#!/WebConfig` > **META Tag Settings (GTM,Pixel,Script)** tab.

@@ -29,6 +29,7 @@ Manages the website's system content — articles / news / blog entries — as a
 | Content language (`DefaultLangContent`) | dropdown | `changeContentLanguage()`; switches which language's content is listed/edited | Disabled when `NotAllowSave`; tied to multi-language setting |
 | Items per page | dropdown (15/30/50) | `changePagesizeitem()` | Appears top-right and in footer |
 | Row: Order / Copy / select checkbox / Pin / Topic / Categories / DateTime / Close Comment / Tools | per-row controls | Copy = `copyContentManager`; Pin = `checkbStricky` (bSticky); Comment badge = `checkbComment`; Tools = Edit/Preview/Trash (or Restore/Delete in Trash) | List is `orderBy:['-bSticky','OrderContents.Ordernumber']` — pinned first |
+| Active toggle (สถานะใช้งาน) | toggle badge per row | `checkbActive(manager)` → flips `manager.bActive` optimistically then calls `ContentmanagerService.updateFlags`; reverts if server returns `'ERROR'` | Default = active (true); toggling hides/shows the item on the public page without trashing it. The toggle is separate from **bEnable** (which controls comment/close) and **bSticky** (pin). New items are active by default at the server. |
 | Move Position (ย้ายตำแหน่ง) up/down arrows | per-row | `sortContentmanager(id,'A'/'B')` | Column only shown when `showOrderContents` (i.e. filtered to a category) |
 
 ### Editor view — title & body (`ng-if="managerView"`)
@@ -127,6 +128,7 @@ Manages the website's system content — articles / news / blog entries — as a
 | Block Name (`BlockName`) | text input | `makeContent.NameBlock` | — |
 | Zoom Picture (`ZoomPic`) | checkbox | `makeContent.imgLightbox` (lightbox) | Shown for imgType 1/2/3/5/6 |
 | Enable bullets (เปิดใช้งาน จุด) | checkbox | `makeContent.slideConfig.bBulletType` | Only for imgType = 6 (Slide Gallery) |
+| Transition Speed / ความเร็ว Transition (ms) | number input | `$scope.transitionSpeed` → synced into `Contenmanagertmap.Option[0]` on change via `changeSlideTransition`; saved as `makeContent.slideConfig.transitionSpeed` | Applies to imgType = 3 Slide 01 (templateID 54, input on stab==2) and imgType = 4 Tab Slide (templateID 55, input on stab==1). **On Tab Slide (stab==1):** value is synced into `Contenmanagertmap.Option[0]` before `ContentmanagerNext` advances the step — without this sync the field resets to 400 ms on "Next". Default 400 ms when unset or 0. |
 
 ## Common tasks
 
@@ -137,6 +139,17 @@ Manages the website's system content — articles / news / blog entries — as a
 4. Click **Add Block**, choose an image style/position (or Tab/Gallery), set a Block Name, then upload images and write the body in the Kendo rich-text editor.
 5. In the right panel: tick **Categories**, add **Search Tags**, set **Scheduler** Start/End dates and Display Color if needed, fill **SEO** Keywords/Description.
 6. Click **Save & Publish** (or **Draft** to save without publishing; the split-dropdown offers Save / Save and Close).
+
+### Toggle an item active / inactive (without trashing)
+1. On the list, find the content row.
+2. Click the **Active** badge/toggle on the row (`checkbActive`).
+3. The item is immediately hidden from (or shown on) the public page. The toggle reverts automatically if the server rejects the change.
+
+### Set slide transition speed (Tab Slide or Slide 01 template)
+1. Open or create a content item, click **Add Block**, choose imgType = 3 (Slide 01) or 4 (Tab Slide).
+2. On the block settings step that has the **Transition Speed** input (stab==2 for Slide 01; stab==1 for Tab Slide), enter the speed in milliseconds (default 400).
+3. For Tab Slide: after editing the speed, click **Next** — the value is now synced before the step advances and will persist on save.
+4. Click **Save & Publish**.
 
 ### Edit / delete an existing item
 1. On the list, use the **Edit** (pencil) tool on the row, or click the title; opens the editor.

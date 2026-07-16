@@ -151,6 +151,18 @@ Order list with customer name, status (Unpaid/Paid), totals; receipt/label print
   - Payment add via `AddPaymentSetting()` in `ThirdCTRL`.
   These do NOT use the WebConfig `Localconfig/saveConfig` pipeline — shop settings have their own `ShopcartController` actions that persist to PoolNode/Mongo.
 
+## Checkout: member company info pre-fill (feature/register-company-info)
+
+When a member **logs in during checkout**, the system now automatically pre-fills the shipping and billing address forms with the member's company data stored in their member profile:
+
+| Auto-filled field | Source (member profile) |
+|---|---|
+| Company Name (ชื่อบริษัท) | `memberDetail.MemberCompanyName` → `order.company` / `order.company1` |
+| Branch Number (เลขที่สาขา) | `memberDetail.MemberBranchNumber` → `order.companyBranch` / `order.companyBranch1` |
+| Tax ID (เลขประจำตัวผู้เสียภาษี) | `memberDetail.MemberTaxID` → `order.TaxID` / `order.TaxID1` |
+
+The branch number is also displayed after the company name in all checkout preview boxes and order summary. Member company data is set via **Member Manager** (`?manage=true#!/Member` > Edit member > Company Info panel).
+
 ## Gotchas / multi-tenant notes
 - **Per-domain feature gates are config-driven, not hardcoded whitelists (good).** Online payment gateway cards (`Paypal`, `PaySocial`, `Omise`, `twoCtwoP`), the SMS notification row (siteowner `smsUsing`), and the Coupon/Promotion rows (`hideCoupon`/`hidePromotion`) all render based on per-domain settings — they are per-tenant flags, not in-code domain lists. No hardcoded `DomainID` whitelist was observed in these views.
 - **Language scoping:** every settings screen has its own `DefaultLang` selector; values like shop detail and notification text are stored per language. When "All languages" is on, Shop Detail writes a `shopOwnerConfigs[]` entry keyed by `languageID`. Always test the language you intend to edit.
