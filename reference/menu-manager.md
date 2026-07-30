@@ -42,6 +42,24 @@ The screen is a chooser, not a form. It has two read-only "current selection" pr
 1. Open the picker and click a color swatch in the palette.
 2. The gallery filters to templates of that color (falls back to all if none match); pick Main or Side as above.
 
+## Menu with Image 12 — ลิงก์เมนูระดับ 3 (DEV-1790)
+
+Menu template **Menu with Image 12** (`Menu_with_image12.cshtml`) รองรับการตั้ง URL ให้ menu item ระดับ 3 (sub-item ชั้นในสุด) ตั้งแต่ DEV-1790
+
+### พฤติกรรม
+| เงื่อนไข | ผลลัพธ์ |
+|---|---|
+| **`URLTarget` ว่างเปล่า** (`string.IsNullOrEmpty`) | item ทำงานแบบ slide — `ng-click="slideToContentTopic(...)"` เหมือนเดิม |
+| **`URLTarget` มีค่า** | item กลายเป็น `<a href="...">` ลิงก์ตาม URL ที่กรอก รองรับ `bNewWindows` (open in new tab) ด้วย |
+
+### วิธีตั้งค่า
+1. เข้า layout editor ของหน้าที่วาง Menu with Image 12.
+2. คลิก gear → ตั้งค่า เมนูระดับ 3 ที่ต้องการ → ใส่ **URL Target** ในช่อง Link / URLTarget.
+3. ติ๊ก **New Window** ถ้าต้องการเปิดแท็บใหม่.
+4. Save และ Apply.
+
+> **Gotcha:** พฤติกรรมนี้เฉพาะ **Menu with Image 12** เท่านั้น (`Views/Component/Menu/MegaMenu/Menu_with_image12.cshtml`). Menu template อื่นอาจมีการจัดการ `URLTarget` ที่แตกต่างกัน
+
 ## Wired in (for developers)
 - **View(s):** `Boy_Growth_a_Man/Boy_Growth_a_Man/Views/Theme/6Menu.cshtml` (the screen); preview partials `Views/Theme/MenuBootstrap.cshtml`, `MenuBootstrapVertical.cshtml`, `MenuKendo.cshtml`, `MenuKendoVertical.cshtml`, and shared head `Views/Theme/MenuHeaderJSCSS.cshtml`. Sidebar entry: `Views/LayoutManager/_SlideBarHomeNew.cshtml` (`#!/Menu`).
 - **Route registration:** `ScriptRequire/MainSystem/Routing/Server.js` — `.when('/Menu/?:themeID?', …)` loads `6Menu.cshtml` via `FilesRender/RenderPartial` under controller **`BannerController`** (the Menu route reuses the Banner controller, not `ThemeController`).

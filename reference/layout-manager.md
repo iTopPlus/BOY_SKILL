@@ -74,6 +74,27 @@ The Layout Manager is a drag-and-drop canvas plus a 3-panel toolbar, not a form.
 - **Controller / script:** Route + page load: `ScriptRequire/MainSystem/Routing/Server.js` (`/layoutmanager/?:pageid?` → controller `ComponentCtrlV2`). Render controller: `ScriptRequire/MainSystem/Controller/ComponentV2/ComponentCtrlV2.js`; add-component dispatch: `ComponentCtrlV2AddCmp.js`; wiring: `ComponentCtrlV2_Server.js`; HTTP service: `ComponentService.js`. Drag/drop directives: `ScriptRequire/MainSystem/Directive/DragDrop/Drag.js` + `Drop.js` (the `componentid → ControlType/controller` switch and `case 'L0'..'L11'` section map live in `Drop.js`). Per-component toolbar actions: `ScriptRequire/Component/ComponentConfig/Controller.js` (`switchUp/Down/Left/RightComponent`, `delComponentmanager`). Theme-level column layout helper: `ScriptRequire/System/Layout/Service.js` (+ `index.js`). Scene flag `$scope.Layoutmanager` set in `ScriptRequire/MainSystem/Controller/Global/RouteChangeSuccess/index.js`.
 - **Save endpoint:** Adding: `Component/AddComponent` (and `Component/AddComponentLandingPage` for system master pages). Moving: `Component/SwitchComponent` (Action = `UP`/`DOWN`/`LEFT`/`RIGHT`). Deleting: `Component/DelComponent`. Per-component padding/border/style: `Component/saveComponentConfig`. Theme column layout: `Theme/setLayout` (+ `Theme/getLayoutPCAll` / `getLayoutMobileAll` / `getLayoutTabletAll`). C# handlers are `Controllers/ComponentController.cs` (`AddComponent` line 157, `AddComponentLandingPage` 252, `SwitchComponent` 332, `DelComponent` 342) and `Controllers/ThemeController.cs` (setLayout / getLayout*).
 
+## Image Gallery — Bullet/Pager สำหรับ Fade Gallery (feature/image-gallery-fade-bullet)
+
+**Image component** (componentid 5 — Photo Album) รองรับ toggle เปิด/ปิด **Bullet pager dots** สำหรับ gallery แบบ **Fade** (imgType 7 — ResponsiveSlides)
+
+### Field ที่เพิ่มมา
+| Field (EN / TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| Enable bullets / เปิดใช้งานจุด (สำหรับ Fade Gallery) | checkbox | `Images.bBulletType7` | แสดงเฉพาะเมื่อเลือก image style **Fade** (imgType 7) เท่านั้น |
+
+### พฤติกรรม Bullet
+- เมื่อ `bBulletType7 = true` ResponsiveSlides init ด้วย `pager: true` และใช้ `navContainer: '.rslides-pager-<cmpID>'`
+- Bullet dot ที่ active จะ animate: วงกลม 12px → pill 28px สีดำ (CSS transition)
+- แต่ละ component มี container `div.rslides-pager-<cmpID>` แยกกัน — ไม่กระทบ component อื่น
+
+### Wired in (for developers)
+- **C# Model:** `Models/Image/Image.cs` — field `bBulletType7` ใน `getQueryString()`
+- **Controller:** `ScriptRequire/Component/Images/Controller.js` — pass `ConfigData.bBulletType7`; ใช้ `bEnableDot` ใน responsiveSlides init
+- **View:** `Views/Component/Images/Image.cshtml` — เพิ่ม `<div class="rslides-pager rslides-pager-@(Model._id)">` และ scoped `<style>` สำหรับ bullet animation
+
+---
+
 ## Gotchas / multi-tenant notes
 - **One page + one language at a time.** Layout mode edits a single `pageId`; the language is `DefaultLanguage` resolved from the URL/cookie. Components are stored per language, so content added in one language won't appear under another.
 - **Sections vs components.** A "section" is itself a special Layout *component* (the `L0`–`L11` column templates). Regular components get dropped either at a top-level page position or *inside* a section column (`#Lay<positionIndex>_<RefID>`). Nesting a Layout inside a Layout is explicitly disallowed (checked via `boderedlayout` class / `Lay` id and rejected with a toast).

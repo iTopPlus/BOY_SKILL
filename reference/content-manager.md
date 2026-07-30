@@ -160,6 +160,108 @@ Manages the website's system content — articles / news / blog entries — as a
 - **C# controller:** `Controllers/Control/ContentManagerController.cs` (route base `ContentManager/...`).
 - **Save endpoint:** `ContentManager/saveContentmanager` (async `JsonResult saveContentmanager(Contentmanager content)`, line ~463). Related endpoints: `setCategory`, `delCategory`, `getCategory`, `setTagContentmanager`/`setAllTagContentmanager`, `delTagContentmanager`, `getTagContentmanager`, `saveTrashContentmanager`, `delContentmanager`/`delAllContentmanager`, `copyContentManager`, `sortContentmanager`/`reorderContentmanager`, `getContentRSSfeed` + `Rssfeed` (the public `rssfeed.xml`), `setRecentTags`/`getRecentTags`, `reindexOrdernumberByCategorieID`, `AddTagContentmanagerFromExcel`. Image uploads go to `FilesRender/UploadFileServer` (and `UploadFileServerLocal` for mp4), category image to `ContentManager/UploadFile`.
 
+## Alt Text สำหรับรูปภาพใน Content Block (feature/contentinline-image-alt-field)
+
+เมื่อ upload หรือเลือกรูปใน **CommonUpload** (ใช้ร่วมกันใน Content Block ทุกประเภท) มีช่อง **Alt Text (คำอธิบายรูป)** เพิ่มขึ้นมา
+
+### Field ที่เพิ่มมา
+| Field (EN / TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| Alt Text / คำอธิบายรูป (`currentImg.imageAlt`) | text input | ค่าที่ใส่จะถูก inject เป็น `alt="..."` บน `<img>` tag ที่ render ออกสู่ public | แสดงเฉพาะเมื่อ `Imgmanager != 'UploadVideo'` |
+
+### พฤติกรรมการ auto-fill
+1. เมื่อ **เลือกไฟล์** upload — `imageAlt` ถูก pre-fill จากชื่อไฟล์ (ตัดนามสกุลออก) ทันที
+2. เมื่อ **เลือกรูปที่ upload แล้ว** จาก image manager — อ่านค่า alt จากชื่อไฟล์ที่ match pattern `z-z` ใน path
+3. ถ้า `<img>` tag มี `alt` อยู่แล้ว — **ไม่** overwrite ด้วย fallback filename (แก้จากพฤติกรรมเดิม)
+
+### Wired in (for developers)
+- **View:** `Views/Component/ContentKendo/CommonUpload.cshtml` (เพิ่ม `div.form-group` สำหรับ alt input, `ng-if="Imgmanager != 'UploadVideo'"`)
+- **Directive:** `ScriptRequire/MainSystem/Directive/Kendo/KendoImage.js` — `scope.currentImg.imageAlt` เก็บค่า; inject ลงใน rendered `<img>`, `<a fancybox>`, และ `<img>` แบบ style สอง
+- **Helper:** `ScriptRequire/Helper.js` `getFileNameFromImagePath` — แก้ให้ skip fallback เมื่อ `alt` มีค่าอยู่แล้ว
+- **i18n:** `ScriptRequire/domains/language/menu-by-language/website-setting.js` — `altText` (TH: "คำอธิบายรูป" / EN: "Alt Text"), `altPlaceholder` (TH: "คำอธิบายภาพ" / EN: "Image description")
+
+---
+
+## Paste Options Popup (feature/contentmanager-paste-options-popup)
+
+เมื่อ **Paste (Ctrl+V)** ใน Kendo rich-text editor ของ Content Block จะแสดง popup เลือกรูปแบบการวางแทน browser `confirm()` เดิม
+
+### Popup มี 3 ตัวเลือก
+| ตัวเลือก | ภาษาไทย | ผลลัพธ์ |
+|---|---|---|
+| ปุ่มซ้าย (A สีแดง) | วางแบบมี Style | วางพร้อม HTML + inline style ของต้นทาง |
+| ปุ่มกลาง (A ดำ) | วางแบบข้อความธรรมดา | strip HTML ทั้งหมด เหลือแค่ plain text |
+| ปุ่มขวา (Ab ดำ) | วางแบบรวม Style กับปลายทาง | วางแบบ merge — ลบ inline `style=""` แต่ยังคง HTML tag structure |
+
+### พฤติกรรมเพิ่มเติม
+- ถ้า paste มี `<table>` — ครอบด้วย `<div class="table-responsive"><table class="table">` เสมอ (ทุก mode ยกเว้น plain text)
+- ถ้า paste มี `src="data:image"` — reject พร้อม toastr warning "กรุณาอัพโหลดจากระบบเท่านั้น"
+- ถ้า paste มี URL ที่มีคำว่า `itopplus` — แปลง `href=".../#!/"` → `href="/"` เพื่อไม่ให้ link เป็น absolute URL
+- **Block ใหม่** เริ่มต้นว่างเปล่า (ไม่มี placeholder text "คลิกที่นี้เพื่อพิมพ์ข้อความระบบ" อีกต่อไป)
+- Popup ปิดอัตโนมัติเมื่อคลิกนอก popup
+
+### Wired in (for developers)
+- **Controller:** `ScriptRequire/Component/Contentmanager/Controller.js` — function `showPasteOptionsPopup()`, `processPasteHtml()`, `stripInlineStyles()`, `dismissPastePopup()`. Replaces `$scope.onPaste` เดิมที่ใช้ `confirm()`
+- **CSS class:** `.paste-options-popup`, `.paste-opt-btn` (inject ลง `document.body` แบบ `position:fixed`)
+
+---
+
+## Move Position แสดงเมื่อ filter category (feature/contentmanager-show-moveposition-on-category-filter)
+
+ลูกศร **Move Position** (ขึ้น/ลง) ที่ใช้ reorder content item ตอนนี้แสดงขึ้นมาเมื่อ **filter ด้วย category** ด้วย ไม่ใช่แค่ตอนที่ไม่ได้ filter
+
+### พฤติกรรม
+| เดิม | ใหม่ |
+|---|---|
+| ลูกศร Move Position แสดงเฉพาะเมื่อ `showOrderContents` = true (filter category แล้วเรียงตาม Ordernumber) | ลูกศรแสดงเมื่อ filter category ด้วย (`searchCategoryID` มีค่า) และ sort ก็ consistent กับ All-tab |
+
+### Wired in (for developers)
+- **Controller:** `ScriptRequire/Component/Contentmanager/Controller.js` — `sortContentmanager` function ส่ง `Config.searchCategoryID` ไปด้วยตอน sort เพื่อให้ server sort ใน scope ของ category นั้น
+
+---
+
+## Tag Import — แสดง Error/Success Message (feature/contentmanager-tag-import-error-messages)
+
+เมื่อ **import แท็กจาก Excel** ผ่าน "Upload tags from Excel" ใน Manage Search Tag modal ระบบจะแสดง toastr notification แทนที่จะเงียบ
+
+### Notification
+| กรณี | Toastr |
+|---|---|
+| Import สำเร็จ | `success` — "นำเข้าแท็กสำเร็จ / เรียบร้อย" + รีโหลด tag list อัตโนมัติ |
+| Import ล้มเหลว (server error) | `error` — ข้อความจาก `getTagImportErrorMessage(data.result)` + title "นำเข้าไฟล์ไม่สำเร็จ" |
+| AJAX fail (network error) | `error` — "เกิดข้อผิดพลาดในการอัพโหลด กรุณาลองใหม่ / ข้อผิดพลาด" |
+
+### Wired in (for developers)
+- **Controller:** `ScriptRequire/Component/Contentmanager/Controller.js` — jQuery fileupload `done` / `fail` callbacks ของ `AddTagContentmanagerFromExcel`
+- **Domain helper:** `getTagImportErrorMessage` จาก `ScriptRequire/domains/components/contentmanager.domain` — แปลง server response เป็น error string
+
+---
+
+## Scheduler — Color Picker + Auto-refresh Calendar (feature/scheduler-auto-active-content)
+
+Content ที่ใช้ **Scheduler** (ตั้งเวลาแสดงผล) มีปรับปรุงสองส่วนที่ทำงานร่วมกัน
+
+### 1. Color Picker ใน Content Editor
+ใน right panel ของ Content Editor (ส่วน **Scheduler** — วันเริ่มต้น/วันสิ้นสุด) มีช่อง **Display Color (สีในการแสดงผล)** เป็น `<input type="color">` ผูกกับ `Content.Color`
+
+| Field (EN / TH) | Type | Effect |
+|---|---|---|
+| Display Color / สีในการแสดงผล (`Content.Color`) | color picker (HTML5 `type="color"`) | สีที่เลือกจะแสดงบน calendar ของ Scheduler component บนหน้าเว็บ |
+
+### 2. Auto-refresh Calendar หลัง Save
+เมื่อ Save content ที่มี `bUseScheduler = true`:
+- ContentManager controller broadcast event `schedulerContentSaved`
+- Scheduler component (`SchedulerController`) ฟัง event นี้ และ re-fetch + re-render calendar ทันทีโดยอัตโนมัติ
+- ไม่ต้อง reload หน้าเพื่อดูการเปลี่ยนแปลงบน calendar
+
+### Wired in (for developers)
+- **Content Editor:** `Views/Management/ViewContent.cshtml` — เพิ่ม `<input type="color">` ใน scheduler-date-fields section
+- **ContentManager Controller:** `ScriptRequire/Component/Contentmanager/Controller.js` — `$rootScope.$broadcast('schedulerContentSaved')` หลัง save สำเร็จ เมื่อ `Content.bUseScheduler` เป็น true
+- **Scheduler Controller:** `ScriptRequire/Component/Scheduler/Controller.js` — `$scope.$on('schedulerContentSaved', ...)` re-fetch ด้วย `calendarConfigData` และ re-render ด้วย `calendarInstance.setMatrix(matrix).render()`
+- **Scheduler init fix:** Scheduler ที่ไม่มี record ใน DB จะถูก auto-create (`addscheduler`) แทนที่จะ fail เงียบๆ
+
+---
+
 ## Gotchas / multi-tenant notes
 - **Language switching:** each modal/view reads the `<DomainID>languageManageBackend` cookie to pick TH vs EN labels via `isThaiLanguage`. The content **data** language is separate (`DefaultLangContent` dropdown bound to `languageSetting`), gated by the General-Settings "Enable Contentmanager Multiple Languages" toggle (`bAllowMultipleLanguage`). `Mylanguage == '523d4c71164185981a000001'` is the Thai language-id sentinel used in column-header switches.
 - **Hidden-by-default controls:** "Create RSS Feed", "ReIndex Sort Order", Custom Cover ALT, Video Cover, the Javascript section, subtitle, and the Excel tag-upload are all `display:none` in the markup and surfaced selectively (per-domain script / state) — don't assume they're visible.
