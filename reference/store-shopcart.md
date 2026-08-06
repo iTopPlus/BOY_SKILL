@@ -139,6 +139,25 @@ Order list with customer name, status (Unpaid/Paid), totals; receipt/label print
 2. Click **Add coupon (เพิ่มคูปอง)**, configure code/discount/limit/expiry in the modal, save. Toggle the row's status to enable it.
    (Coupon system must be enabled in General Settings when `hideCoupon==2`.)
 
+## Checkout — ปุ่ม Copy เลขบัญชีธนาคาร (feature/checkout-bank-account-copy-button)
+
+หน้า Checkout (checkoutTemplate1) มีปุ่ม **คัดลอก** ข้างเลขบัญชีธนาคาร เพื่อให้ลูกค้า copy เลขบัญชีได้ง่าย
+
+### พฤติกรรมบนหน้าจอ
+| องค์ประกอบ | รายละเอียด |
+|---|---|
+| เลขบัญชี (label `bank-account-number`) | แสดงพร้อม format XXX-X-XXXXX-X ผ่าน AngularJS filter `bankAccountFormat` |
+| ปุ่ม **คัดลอก** (`bank-account-copy-btn`) | `ng-click="copyBankAccount(pay.opt2, $event)"` — ใช้ `navigator.clipboard.writeText()` |
+| feedback เมื่อ copy สำเร็จ | label บนปุ่มเปลี่ยนเป็น **"คัดลอกแล้ว!"** + ขอบเขียว; คืนเป็น "คัดลอก" หลัง 1.5 วินาที |
+
+### Wired in (for developers)
+- **View:** `Views/Component/Shopcart/cart/checkoutTemplate1.cshtml`
+- **Controller function:** `copyBankAccount(accountNumber, $event)` ใน `ScriptRequire/MainSystem/Controller/Global/Controller.js`
+- **Filter:** `bankAccountFormat` จัด format เลขบัญชีเป็น XXX-X-XXXXX-X
+- **CSS classes:** `.bank-account-copy-btn`, `.bank-account-copy-btn.copied` (สีเขียว)
+
+---
+
 ## Wired in (for developers)
 - **View(s):** `Boy_Growth_a_Man/Views/Shopcart/GlobalSetting/` — `DetailShop.cshtml`, `GeneralSetting.cshtml`, `PaymentSetting.cshtml` (+ `addPaymentOnline`), `Shipping.cshtml` (+ `ShippingForm.cshtml`, `Shippinglate.cshtml`), `AlertShop.cshtml`, `couponSetting.cshtml` (+ `couponConfig.cshtml`), `AddNewCurrency.cshtml`, `newpromotion.cshtml`. Shared tab bar: `Views/Shopcart/ShareShop/MenuShopcart.cshtml`. Catalog/orders: `Views/Shopcart/ShopBackEnd/` (`Home.cshtml`, `Category.cshtml`, `Products.cshtml`, `AddProductV2.cshtml`, `Order.cshtml`, etc.).
 - **Controller / script:** `ScriptRequire/System/Shopcart/Controller.js` + `Service.js` (Pattern A); per-screen controllers `Backend/1FirstStepSetting/Controller.js` (`FirstStepCTRL` — Shop Detail), `Backend/2SecondStep/Controller.js` (`SecondCTRL` — General/Alert/Coupon), `Backend/3ThirdStep/Controller.js` (`ThirdCTRL` — Payment, + `addPaymentOnline.js`), `Backend/4FourStep/Controller.js` (`FourStepCTRL` — Shipping), `Backend/ShopcartHome/` (`ShopcartHomeCTRL`), `Backend/Order/Controller.js` (`OrderCTRL`), `Backend/NewPromotion/Controller.js`. Routes: `ScriptRequire/MainSystem/Routing/Server.js`. Setting-tab menu: `ScriptRequire/Store/System/Shopcart/Setting/Service/menu/loadmenu.js`. Business logic: `ScriptRequire/domains/shopcart/` (currency, coupon, promotion, shipping, cart, attribute, price domains). C# controller: `Controllers/ShopcartController.cs` (and `Controllers/ShopPaymentController.cs`).

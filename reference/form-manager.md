@@ -140,6 +140,43 @@ Left rail = draggable items. Each is dropped into a layout column on the canvas,
   - `FormManager/ExportCustomFormByRangeDate`, `FormManager/printCustomFormByDateRange`, `FormManager/printFormOneByOne`
   - Public submission side (placed form on a page) uses the separate `ManageForm/*` endpoints: `ManageForm/formSubmit`, `ManageForm/formSubmitByLayout`, `ManageForm/getFormByCmpID`, `ManageForm/setFormByCmpID`, `ManageForm/AddFormByCompID`, `ManageForm/createPreviewByLaout`.
 
+## Job Number — ระบบเลขที่งาน (feature/form-manager-job-number + feature/form-manager-jobnumber-continuous-mode)
+
+แต่ละฟอร์มสามารถเปิดใช้ระบบ **Job Number** (เลขที่งาน) ที่ auto-generate และแนบไปกับทุก submission ของฟอร์มนั้น
+
+### วิธีเปิดใช้
+1. ไปที่ `?manage=true#!/FormManagement`
+2. คลิกปุ่ม **Job No.** ในแถวของฟอร์มที่ต้องการ → modal **ตั้งค่า Job Number** เปิดขึ้น
+3. ติ๊ก **เปิดใช้งาน Job Number** toggle
+4. ตั้งค่าตามต้องการ แล้วคลิก **บันทึก**
+
+### Fields ใน Modal Job No.
+| Field (EN / TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| เปิดใช้งาน Job Number | toggle / checkbox | `jobNoForm.enabled` → `bEnableJobNumber` บน model | ต้องเปิดก่อนถึงจะเห็น field อื่น |
+| Prefix (ไม่บังคับ เช่น ITP, FH) | text input (max 5 ตัว) | `jobNoForm.jobNumberPrefix` | ถ้าว่างเปล่า format จะเป็น `YYYYMMDD-XXX` / ถ้ามี prefix จะเป็น `PREFIX-YYYYMMDD-XXX` |
+| การนับเลข / Counting mode | radio 2 ตัวเลือก | `jobNoForm.continuous` → `jobNumberContinuous` | ดูรายละเอียดด้านล่าง |
+
+### Counting Mode (feature/form-manager-jobnumber-continuous-mode)
+| ตัวเลือก | ค่า `jobNumberContinuous` | พฤติกรรม |
+|---|---|---|
+| รายวัน — Daily | `false` (default) | นับเลขใหม่ทุกวัน: 001, 002, … → วันถัดไปเริ่ม 001 ใหม่ |
+| ต่อเนื่อง — Continuous | `true` | นับต่อไปเรื่อยๆ ข้ามวัน: 001, 002, … → วันถัดไปนับต่อจากเลขสุดท้าย |
+
+### Job Number ปรากฏที่ไหนบ้าง
+- **Badge** บน message inbox list และ detail view ของฟอร์ม
+- **Header** ของอีเมล notification ที่ส่งไปหา recipient
+- ใน **Form History** แต่ละ submission
+
+### Wired in (for developers)
+- **View:** `Views/Management/ViewFormControl.cshtml` — modal `#jobNoModal` พร้อม toggle, prefix input, radio counting mode
+- **Controller:** `ScriptRequire/System/Formmanager/Controller.js` — `$scope.openJobNoConfig(form)` เปิด modal; `$scope.saveJobNoConfig()` บันทึก
+- **Service:** `ScriptRequire/System/Formmanager/Service.js` — `saveJobNumberConfig(formID, prefix, bEnableJobNumber, jobNumberContinuous)` POST ไปที่ `FormManager/SaveJobNumberConfig`
+- **C# Model:** `Models/Form/form.cs` — field `jobNumberPrefix`, `bEnableJobNumber`, `jobNumberContinuous` ใน `getQueryString()`
+- **Save endpoint:** `FormManager/SaveJobNumberConfig`
+
+---
+
 ## Gotchas / multi-tenant notes
 - The route name `FormManagement` must be in the `RouteConfig.cs` controller whitelist for the page to load, and any new `FormManager`/`ManageForm` controller endpoints must be registered there too (see repo `RouteConfig` rule) — otherwise the AJAX returns the SPA shell HTML instead of JSON.
 - `FormManagerController` endpoints take a single parameter named `form` of type `form` (and `formDisplay` for `ManageForm`). Per the param-name-collision rule, keep the posted JSON wrapper key (`{ form: ... }`) matching the action's parameter name.
