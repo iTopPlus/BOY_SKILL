@@ -230,3 +230,39 @@ The branch number is also displayed after the company name in all checkout previ
 ### Gotchas
 - **Channel ที่ URL หรือ Icon ผิดรูปแบบจะหายเงียบ ๆ** — validate ตอน save ใช้ `continue` ข้ามไป ไม่มี error แจ้ง admin; ถ้าปุ่มที่เพิ่มไว้ไม่ขึ้น ให้เช็คว่า URL ขึ้นต้นด้วย `http://` / `https://` และ IconUrl ขึ้นต้นด้วย `http://` / `https://` / `/` หรือยัง
 - **ButtonText ภาษาไทยล้วนได้ Key เป็น `custom-0`, `custom-1`, …** ซึ่งผูกกับ **ลำดับใน array** — สลับลำดับช่องทางแล้ว Key อาจเปลี่ยนตาม
+
+---
+
+## Feature: ปุ่มคัดลอกเลขบัญชีธนาคาร (Bank Account Copy Button) (`feature/checkout-bank-account-copy-button`)
+
+### What it does
+เพิ่ม **ปุ่ม "คัดลอก"** ถัดจากเลขบัญชีธนาคารในหน้า Checkout (ขั้นตอนชำระเงิน) — ลูกค้ากดปุ่มเดียวเพื่อ copy เลขบัญชีเข้า clipboard โดยไม่ต้องลากเมาส์เลือกเอง พร้อม feedback ข้อความ "คัดลอกแล้ว!" ชั่วคราว
+
+### พัฒนาใน 3 ขั้นตอน (3 commits)
+
+| Commit | สิ่งที่เพิ่ม |
+|---|---|
+| `144b5f9e7` | เพิ่มปุ่ม copy (icon ✂️ glyphicon-copy) + `$scope.copyBankAccount()` + CSS `.bank-account-number` (monospace) + `.bank-account-copy-btn` + `.copied` (สีเขียว) |
+| `eae9ef45b` | เพิ่ม filter `bankAccountFormat` — format เลขบัญชีเป็น `XXX-X-XXXXX-X` (dash separator) |
+| `521d2fb71` | เปลี่ยนปุ่มจาก icon เป็น **text label** `<span class="btn-copy-label">คัดลอก</span>` → `"คัดลอกแล้ว!"` เมื่อกด (UX ที่ชัดเจนกว่า) |
+
+### พฤติกรรมปุ่ม
+1. กดปุ่ม → `$scope.copyBankAccount(accountNumber, $event)` เรียก `navigator.clipboard.writeText(accountNumber)`
+2. Success → เปลี่ยน label เป็น **"คัดลอกแล้ว!"** + เพิ่ม class `copied` (สีเขียว `#e6f4e6`)
+3. หลัง 2 วินาที → reset label กลับ "คัดลอก" + ลบ class `copied`
+
+### Format เลขบัญชี
+Filter `bankAccountFormat` แปลงเลขบัญชีดิบ (string ตัวเลขล้วน) → รูปแบบ `XXX-X-XXXXX-X` ก่อนแสดงผลบนหน้าจอและก่อน copy ลง clipboard
+
+### Fields / Elements ใหม่
+| Element | CSS class / scope | ความหมาย |
+|---|---|---|
+| เลขบัญชี label | `.bank-account-number` | font-family: monospace; ทำให้ตัวเลขเรียงชัดเจน |
+| ปุ่มคัดลอก | `.bank-account-copy-btn` | ปุ่มข้างๆ เลขบัญชี |
+| สถานะ copied | `.bank-account-copy-btn.copied` | background สีเขียวอ่อน `#e6f4e6` ชั่วคราว |
+| label ข้อความ | `.btn-copy-label` | "คัดลอก" → "คัดลอกแล้ว!" |
+
+### Wired in (for developers)
+- **Controller:** `ScriptRequire/System/Shopcart/FrontEnd/` (หรือ Checkout controller) — `$scope.copyBankAccount(accountNumber, $event)` ใช้ `navigator.clipboard` API; filter `bankAccountFormat`
+- **View:** Checkout payment step — `<label class="bank-account-number">{{pay.opt2 | bankAccountFormat}}</label>` + `<button class="bank-account-copy-btn" ng-click="copyBankAccount(pay.opt2, $event)"><span class="btn-copy-label">คัดลอก</span></button>`
+- **Commits:** `144b5f9e7` (icon copy button + monospace), `eae9ef45b` (bankAccountFormat filter), `521d2fb71` (text label + copied feedback)
