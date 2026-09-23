@@ -505,3 +505,81 @@ toggle แสดง bullet pager (จุดด้านล่าง) สำห�
 ### Gotchas
 - ต้องเลือก Type = **Fade** ก่อนถึงจะเห็น field นี้
 - `ng-model: Image.bShowBullet`
+
+---
+
+## Feature: วันที่แสดงบนเว็บ (Display Date) + Toggle กำหนดเอง (`feature/contentmanager-displaydate-save-fix` + `feature/contentmanager-copy-above-original`)
+
+### What it does
+เพิ่มระบบ **"วันที่แสดงบนเว็บ"** ให้ admin เนื้อหาแต่ละชิ้นสามารถกำหนดวันที่ที่จะแสดงบนหน้าเว็บได้เอง แยกจากวันที่สร้าง (CreatedDate) หรือวันที่แก้ไขล่าสุด (Lastupdate) — เช่น retroactive publish บทความเก่า หรือจัดเรียงตามวันที่ต้องการ
+
+สองส่วนที่ทำงานร่วมกัน:
+- **`displayDate`** — ฟิลด์เก็บวันที่เป็น millisecond timestamp string
+- **`bUseDisplayDate`** — toggle "กำหนดวันที่เอง" เพื่อสลับระหว่าง custom date กับ Lastupdate
+
+### Fields ใหม่ใน Editor (right-hand accordion)
+
+| Field (EN / TH) | ชนิด | ความหมาย | ข้อควรระวัง |
+|---|---|---|---|
+| Display Date (วันที่แสดงบนเว็บ) | header label | กลุ่มควบคุมวันที่แสดงผลสาธารณะ | — |
+| กำหนดวันที่เอง / Use custom date | checkbox | `Content.bUseDisplayDate` — เปิดแล้ว date picker แสดงขึ้น; ปิดใช้ Lastupdate แทน | default = ปิด (ใช้ Lastupdate) |
+| วันที่แสดงบนเว็บ (ค่าเริ่มต้น: วันที่แก้ไขล่าสุด) | Kendo date-time picker | `Content.displayDate` — แสดงเมื่อ `bUseDisplayDate = true` | `ng-show="Content.bUseDisplayDate"` |
+
+### Logic วันที่ที่แสดงหน้า Editor preview
+```
+Content.bUseDisplayDate && Content.displayDate > 0
+  ? displayDate      ← ใช้วันที่ที่ admin กำหนด
+  : Content.Lastupdate   ← ใช้วันที่แก้ไขล่าสุด (default)
+```
+
+### การเก็บค่า displayDate
+- **Save:** แปลง date object → `String(moment(date).valueOf())` (millisecond string); ว่าง/ไม่ valid → `'0'`
+- **Load:** `Number(displayDate) > 0` → `new Date(Number(displayDate))`; ไม่งั้น `null`
+- ส่งผ่าน query string: `&displayDate=...&bUseDisplayDate=true/false`
+
+### Wired in (for developers)
+- **C# Model:** `Contentmanager.cs` — `public string displayDate { get; set; }` + `public bool bUseDisplayDate { get; set; }` + `public string Lastupdate { get; set; }` (read-only จาก DB)
+- **Query string:** `ContentmanagerService.getQueryString()` — เพิ่ม `&displayDate=` และ `&bUseDisplayDate=`
+- **Controller:** `ScriptRequire/Component/Contentmanager/Controller.js` — parse/format `Content.displayDate` + set `ConfigData.bUseDisplayDate` ก่อน save
+- **View:** `Views/Management/ViewContent.cshtml` — checkbox `ng-model="Content.bUseDisplayDate"` + `<input kendo-date-time-picker ng-model="Content.displayDate">` ใน `ng-show="Content.bUseDisplayDate"`
+- **Commits:** `628f7a4ad` (feat: displayDate field + UI), `892c0e239` (feat: bUseDisplayDate toggle + Lastupdate default), `fd72db550` (fix: send displayDate on save + restore picker)
+
+### Gotchas
+- `displayDate = '0'` หรือว่าง → ถือว่า "ไม่ได้ตั้ง" — frontend ใช้ `Lastupdate` แสดงแทน
+- `bUseDisplayDate = false` → แม้จะมีค่า `displayDate` อยู่ ก็ยังแสดง `Lastupdate` (ค่า displayDate ไม่ถูกทิ้ง เพียงแค่ไม่ใช้)
+- ทั้งสอง branch (`contentmanager-displaydate-save-fix` และ `contentmanager-copy-above-original`) เป็นฟีเจอร์เดียวกัน แยก commit เพื่อ review
+
+---
+
+## Feature: Popup ตัวเลือกการวาง (Paste Options Popup) (`feature/contentmanager-paste-options-popup`)
+
+### What it does
+แทนที่ browser `confirm()` dialog เดิมด้วย **popup Word-style** ที่ปรากฏใกล้จุดวางข้อความ — ให้ admin เลือกได้ว่าจะวางเนื้อหาอย่างไรก่อนที่จะ commit ลง editor
+
+### 3 ตัวเลือกใน Popup
+
+| ปุ่ม (icon + tooltip) | mode | พฤติกรรม |
+|---|---|---|
+| A (สีแดง) — Keep Source Formatting / วางแบบมี Style | `styled` | วาง HTML เต็มรูปแบบ ปรับตาราง responsive + ลบ inline data-image + fix ลิงก์ภายใน iTopPlus |
+| A (สีเดิม) — Keep Text Only / วางแบบข้อความธรรมดา | `plain` | strip inline styles ทั้งหมดออก คงแค่ text + structure |
+| Ab — Merge Formatting / วางแบบรวม Style กับปลายทาง | `merge` | ใช้ Kendo `pasteCleanup` merge กับ style ปลายทาง |
+
+### พฤติกรรม UI
+- Popup สร้างเป็น `div.paste-options-popup` แนบใน `document.body` ณ ตำแหน่ง cursor (BoundingClientRect)
+- **Viewport clamp** — ถ้า popup เกินขอบขวา/ล่างของ viewport จะถูก shift เข้ามาอัตโนมัติ
+- กด Escape หรือ click นอก popup → ปิด popup (event listener บน `document`)
+- Popup ถูก dismiss อัตโนมัติหลัง user เลือก mode
+
+### ฟังก์ชันหลัก
+| Function | หน้าที่ |
+|---|---|
+| `showPasteOptionsPopup(kendoEditor, originalHtml)` | สร้าง + วาง popup ณ cursor position |
+| `dismissPastePopup()` | ลบ popup ออกจาก DOM + ถอด document listener |
+| `processPasteHtml(html)` | ปรับ HTML ก่อนวาง: wrap ตาราง responsive, ลบ base64 image, fix internal href |
+| `stripInlineStyles(html)` | regex strip `style="..."` ทุก attribute |
+
+### Wired in (for developers)
+- **Controller:** `ScriptRequire/Component/Contentmanager/Controller.js` — ฟังก์ชันทั้งหมดข้างต้น; hook เข้า Kendo editor `paste` event
+- **View:** ไม่มี markup พิเศษ — popup สร้างใน JS ล้วน (`document.createElement('div')`)
+- **CSS:** `.paste-options-popup`, `.paste-opt-btn` — defined inline ใน controller หรือ scoped style
+- **Commits:** `9f053763f` (feat: replace confirm with popup), `50af3d9e6` + `4df6e7473` (fix: paste logic refinements)
