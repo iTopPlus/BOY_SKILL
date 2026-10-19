@@ -13,6 +13,12 @@ any tenant's own domain.
 
 ## How to answer a backend question
 
+0. **If the user is asking you to *do* something, not just explain it** — e.g.
+   "create a draft article about X", "show today's visitor stats" — read
+   `reference/open-api-integration.md` first and follow its check-before-you-call
+   procedure (query the live `tools/list` or `openapi.json`, never assume a fixed
+   list of endpoints). If a matching Open API/MCP tool exists, use it instead of
+   step 2–3 below. If none exists, continue with the steps below as normal.
 1. Identify which feature the question is about (table below).
 2. Read the matching `reference/<file>.md`.
 3. Answer with: the **route URL** (ITOPPLUS example), the **sidebar path**, the
@@ -46,6 +52,7 @@ any tenant's own domain.
 | Store / shop / products / cart / orders / checkout / shipping / discount | `reference/store-shopcart.md` |
 | Domain settings, languages, add a language, multi-language | `reference/domain-language.md` |
 | 360 Image, Custom Booking, Digital Business Hub, Jewelry, E-SIM | `reference/specialized-modules.md` |
+| Doing something via the Open API / MCP / AI connector, not just explaining the UI | `reference/open-api-integration.md` |
 
 ## When the skill can't answer (escalation)
 

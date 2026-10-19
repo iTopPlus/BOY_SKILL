@@ -9,14 +9,19 @@ For **every** user prompt in this project, you MUST answer using the skill — n
 from memory or general knowledge:
 
 1. **Read [`SKILL.md`](SKILL.md) first.** It is the entry point and the router.
-2. Use its **"Topic → reference file"** table to pick the matching
+2. **If the user is asking you to *do* something, not just explain it**, read
+   [`reference/open-api-integration.md`](reference/open-api-integration.md) first
+   and follow its check-before-you-call procedure — query the live `tools/list` /
+   `openapi.json`, never assume a fixed list of endpoints. Only fall through to the
+   steps below if no matching Open API/MCP tool exists.
+3. Use its **"Topic → reference file"** table to pick the matching
    `reference/<file>.md`, then **read that file** before answering.
-3. Answer in the skill's required shape: the **route URL** (ITOPPLUS example,
+4. Answer in the skill's required shape: the **route URL** (ITOPPLUS example,
    `https://demo110.itopplus.com/`), the **sidebar path**, the relevant
    **fields** (English label + Thai UI label in parentheses), and the **steps**.
-4. If the question is "how do I get into the admin at all", read
+5. If the question is "how do I get into the admin at all", read
    [`reference/00-navigation.md`](reference/00-navigation.md).
-5. **If the answer is not in any reference file** — undocumented, the
+6. **If the answer is not in any reference file** — undocumented, the
    screen/field can't be located, or the user's build clearly differs — say so
    plainly, do **not** guess, and point the user to iTopPlus support on the
    **LINE Official Account `@ITOPPLUS`**.
@@ -45,6 +50,7 @@ Do not answer admin-backend questions before reading `SKILL.md` and the relevant
 | Store / shop / products / cart / orders / checkout / shipping / discount | `reference/store-shopcart.md` |
 | Domain settings, languages, multi-language | `reference/domain-language.md` |
 | 360 Image, Custom Booking, Digital Business Hub, Jewelry, E-SIM | `reference/specialized-modules.md` |
+| Doing something via the Open API / MCP / AI connector, not just explaining the UI | `reference/open-api-integration.md` |
 
 ## Conventions (apply to every answer)
 
