@@ -113,3 +113,35 @@ All three load their Razor view through `FilesRender/RenderPartial?id=/views/Mai
 - The member-file upload form is hidden until a member is chosen — uploading without selecting a member is not possible from the UI.
 - Spinner frame uploads are hard-capped at 2000×2000 px client-side; larger images are rejected with a toast before upload.
 - The route name `MainManagefile` is registered in `App_Start/RouteConfig.cs` (Default-route whitelist) and `FilesRender`/`MainManagefile` are reachable; a new sibling action just needs to live on these already-whitelisted controllers.
+
+
+---
+
+## Feature: เลือกรูปจากคลังรูป (Image Picker "From Library") (`feature/image-picker-reuse-from-uploadlog`)
+
+### What it does
+เพิ่มแท็บ/ปุ่ม **"จากคลังรูป" (From Library)** ให้เลือกรูปที่เคยอัปโหลดไว้แล้วมาใช้ซ้ำ แทนการอัปโหลดใหม่ — ดึงรายการจาก upload log ผ่าน proxy `FileManagement/Library`
+
+### วิธีเข้าถึง
+- ตัวอัปโหลดรูปของ Content (CommonUpload) → แท็บ "จากคลังรูป"
+- Image component (`ImageConfig`) → modal อัปโหลดรูปแกลเลอรี → "จากคลังรูป" (เลือกได้หลายรูป)
+- Shopcart → เพิ่ม/แก้ไขสินค้า (`AddProductV2`, `EditProduct`) → drop zone รูปสินค้า → "จากคลังรูป"
+- Kendo image editor (`kendo-image`)
+
+### Fields
+| Field EN (TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| Search (ค้นหาจากชื่อไฟล์) | text + ปุ่ม "ค้นหา" | กรองตามชื่อไฟล์ (`q`) | |
+| Source (แหล่งที่มา) | select: ทั้งหมด / เนื้อหา / แกลเลอรี / สินค้า / คอนเท้นต์ | กรองตาม `source_system` = contentinline / image / shopcart / contentmanager | server อนุญาตเฉพาะ 4 ค่านี้ ค่าอื่น → HTTP 400 |
+| Use this image (ใช้รูปนี้) | ปุ่ม | ใส่รูปที่เลือกลงในตัวแก้ไข | ว่าง: "ยังไม่มีรูปในคลัง อัปโหลดรูปแรกได้จากแท็บ อัปโหลด" |
+
+### Wired in (for developers)
+- **Controller:** `Boy_Growth_a_Man/Boy_Growth_a_Man/Controllers/FileManagementController.cs` — action `Library(source,q,from,to,page,limit)` → proxy `api/uploadlog` (timeout 5 วินาที, 502 เมื่อล้มเหลว, no-cache, 403 ถ้าไม่มี DomainID)
+- **JS:** `ScriptRequire/MainSystem/Directive/Kendo/KendoImage.js`, `ScriptRequire/Component/Images/Controller.js`, `ScriptRequire/System/Shopcart/Backend/ImageProducts/Controller.js`, `ShopcartHome/ManageProductNew/Controller.js`, `Shopcart/Main/HelperFunction.js` (รองรับ path `Name_Server?file=` และ bare filename แบบเก่า)
+- **Views:** `Views/Component/ContentKendo/CommonUpload.cshtml`, `Views/Component/Images/ImageConfig.cshtml`, `Views/Shopcart/ShopBackEnd/AddProductV2.cshtml`, `EditProduct.cshtml`
+- **i18n:** `ScriptRequire/domains/language/menu-by-language/website-setting.js` (`libraryTab`, `libraryEmpty`, `librarySource*`, `libraryUseThis` ...)
+
+### Gotchas
+- ขึ้นกับ upload log (หัวข้อถัดไป): รูปที่อัปโหลดก่อนเปิด log จะไม่อยู่ในคลัง
+- thumbnail เสียจะถูกทำให้จาง (onerror fallback); ไม่จำกัด path `/Files/Name` อีกต่อไป
+

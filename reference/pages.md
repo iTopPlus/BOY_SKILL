@@ -307,3 +307,43 @@ The Page Manager screen (`Index.cshtml`) is a left page-tree + right detail pane
 - การย้าย checkbox นี้ **ไม่ได้เปลี่ยน behavior** — เพียงแต่ย้าย UI ให้อยู่ตำแหน่งที่ถูกต้อง
 - ถ้าเปิด toggle นี้บน site ที่มีหน้าอยู่แล้ว URL pattern อาจเปลี่ยน — ควรทดสอบ และ regenerate sitemap หลัง toggle
 - `bDisableUrlCharTransform` ถูกอ่านโดย `buildAutoCanonical()` ใน `PageManager/Controller.js` เพื่อ transform `/` → `_Sla_` ใน auto-gen canonical URL
+
+---
+
+## Feature: URL หลายชั้น `/{a}/{b}/{page}` (`feature/page-child-url-multilevel`)
+
+**What it does:** ต่อยอด child-url-prefix — ถ้าหน้าแม่หลายชั้นติ๊ก checkbox เดียวกัน ลิงก์จะต่อกันทุกชั้น เช่น `/เมนูหลัก/หน้านี้/ชื่อเมนูย่อย`
+
+### วิธีเข้าถึง
+- checkbox เดิมที่ `?manage=true#!/Page` → Main Detail (help-block เพิ่มบรรทัดอธิบายการต่อหลายชั้น)
+
+### Fields
+| Field EN / TH | Type | Effect | Gotchas |
+|---|---|---|---|
+| `bChildUrlPrefix` (ตามด้านบน) | checkbox | ทุกชั้นที่ติ๊กถูกต่อใน URL ของหน้าด้านล่าง (บนลงล่าง) | ชั้นที่ไม่ติ๊กไม่ถูกต่อ |
+
+### Wired in (for developers)
+- **C# `Page.cs`:** `PageConfig.ParentUrlChain` (`List<PageUrlChainItem>` — Name/CustomUrlName, ไม่ถูกบันทึก)
+- **C# `RenderPage.cs`:** `PagePath` (segment ทั้งหมด join ด้วย `/`); `HtmlHelperExtensions.cs` แก้ logic ต่อ path
+- **JS `Routing/Client.js`:** ส่ง `&pagepath=` (pagename, pageid, param1..7) นอกเหนือจาก `&parentname=` (คงไว้ให้ PoolNode รุ่นเก่า)
+- **View:** `Views/Page/2MainDetail.cshtml`
+
+### Gotchas
+- PoolNode รุ่นเก่าอ่านได้แค่ `parentname` (ชั้นเดียว)
+
+---
+
+## Feature: Canonical URL ลงท้าย `)` ได้ (`feature/page-canonical-allow-parenthesis`)
+
+**What it does:** แก้ validation ช่อง Canonical URL — เดิมห้ามลงท้ายด้วยอักขระพิเศษทุกตัว (รวม `)`) ตอนนี้ห้ามเฉพาะตัวคั่น/ตัวสะกด URL
+
+### วิธีเข้าถึง
+- `?manage=true#!/Page` → เลือกหน้า → SEO/Canonical URL → Save
+
+### Fields
+| Field EN / TH | Type | Effect | Gotchas |
+|---|---|---|---|
+| Canonical URL — `SelectPageConfig.CanonicalURL` | text | ห้ามลงท้ายด้วย whitespace หรือ `_ / ? # & = , . : ; -` | ลงท้าย `)` ฯลฯ ได้แล้ว; root โดเมนลงท้าย `/` ได้ (`https://www.example.com/`); ผิดจะขึ้น toast "Canonical URL ไม่ถูกต้อง" |
+
+### Wired in (for developers)
+- **JS:** `ScriptRequire/System/PageManager/Controller.js` (regex ตรวจ + ข้อความ toast เพิ่ม `&`, `=`)

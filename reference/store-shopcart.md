@@ -825,3 +825,45 @@ Filter `bankAccountFormat` แปลงเลขบัญชีดิบ (string
 - **Controller:** `ScriptRequire/System/Shopcart/FrontEnd/` (หรือ Checkout controller) — `$scope.copyBankAccount(accountNumber, $event)` ใช้ `navigator.clipboard` API; filter `bankAccountFormat`
 - **View:** Checkout payment step — `<label class="bank-account-number">{{pay.opt2 | bankAccountFormat}}</label>` + `<button class="bank-account-copy-btn" ng-click="copyBankAccount(pay.opt2, $event)"><span class="btn-copy-label">คัดลอก</span></button>`
 - **Commits:** `144b5f9e7` (icon copy button + monospace), `eae9ef45b` (bankAccountFormat filter), `521d2fb71` (text label + copied feedback)
+
+---
+
+## Feature: QR PromptPay ในหน้า Checkout (`feature/checkout-promptpay-qr`)
+
+**What it does:** หน้า checkout แสดง QR PromptPay จากบัญชีธนาคารของร้านที่ชื่อ "พร้อมเพย์"/"Promptpay" พร้อมปุ่ม save image / copy image / copy number; ถ้าสกุลเงิน THB จะล็อกยอดรวมลง QR และแนบ QR ในอีเมลออเดอร์ลูกค้า ยอดคำนวณจาก backend (ไม่เชื่อ client)
+
+### วิธีเข้าถึง
+- ตั้งบัญชี: `?manage=true#!/Shopcart` → Setting → Bank (ชื่อบัญชีต้องเป็น `พร้อมเพย์` หรือ `Promptpay`; เลขพร้อมเพย์อยู่ใน `opt2`)
+- ลูกค้าเห็นที่ checkout step ชำระเงิน
+
+### Fields
+| Field EN / TH | Type | Effect | Gotchas |
+|---|---|---|---|
+| Bank name = พร้อมเพย์ / Promptpay | text | เป็นเงื่อนไขแสดง QR (ต้องไม่ใช่ `opt1 == 'Other'`) | ชื่ออื่นไม่แสดง QR |
+| Bank `opt2` (เลขพร้อมเพย์) | text | ใช้สร้าง payload QR | |
+
+### Wired in (for developers)
+- **JS:** `Directive/PromptpayQr/index.js` + `payload.js` (lazy-load `/Scripts/qrcode.min.js`); `cart/checkout.cshtml` (`itp-promptpay-qr`, `itp-promptpay-amount`)
+- **C#:** `Models/Shopcart/PromptpayQr.cs`, `ShopPaymentController.cs`, `ShopcartController.cs`, `ShopComponentRepository.cs`
+- ร่วมใน branch: ตัวเลขแสดงทศนิยม 2 ตำแหน่งเมื่อ `ExchangeRate != 1`; `checkorder.cshtml` ใช้ `COrders.Currency`; coupon ที่ถูกปฏิเสธคืนค่า VAT/total/shipping; logo ธนาคารในอีเมลใช้ public URL
+
+### Gotchas
+- ล็อกยอดใน QR เฉพาะสกุล THB/บาท; สกุลอื่นเป็น static QR
+
+---
+
+## Feature: Checkout Mobile Redesign v2 (`feature/checkout-mobile-redesign-v2`)
+
+**What it does:** ออกแบบหน้า checkout บนมือถือใหม่ (ธีม teal minimal) — ปุ่ม bottom nav sticky ทุก step, ปุ่ม back แบบ icon, grid ฟอร์มที่อยู่ (zipcode+district / amphoe+province), typeahead ที่อยู่แตะเลือกได้บนมือถือ, เว้น padding ไม่ให้ preview ที่อยู่ถูก sticky bar บัง ไม่มี admin toggle
+
+### วิธีเข้าถึง
+- ทำงานอัตโนมัติที่หน้า checkout บนอุปกรณ์มือถือ
+
+### Wired in (for developers)
+- **CSS:** `Content/shopcart/CheckoutMobile.css` (ใหม่)
+- **Views:** `cart/checkout.cshtml`, `Sharing/AddressForm.cshtml` (เพิ่ม class `checkout-addr-address/district/amphoe/province/zipcode/country`)
+- **JS:** `Directive/AddressForm/Address.js` (touchstart → trigger click บน `.tt-suggestion`), `Checkout/Step/2Second/Controller.js`
+
+### Gotchas
+- แก้ validation: ตรวจเลขผู้เสียภาษีเฉพาะเมื่อติ๊ก "ขอใบกำกับภาษี" และเลิกตรวจ `TaxID1`
+- branch นี้แตะไฟล์อื่นด้วย (`Sidebar/index.js`, `Scheduler/Controller.js`, `ConfigRepository.cs` ฯลฯ) — รายละเอียดไม่ได้ตรวจในเอกสารนี้

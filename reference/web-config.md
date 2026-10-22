@@ -273,3 +273,25 @@ LINE Notify integration ถูกลบออกจากระบบทั้�
 - ถ้าเคยตั้งค่า LINE Notify Token ไว้ → ค่านั้นไม่มีผลแล้ว ไม่มี notification ส่งผ่าน LINE Notify อีกต่อไป
 - ระบบ notification อื่น (Email, LINE OA ผ่าน Messaging API) ยังทำงานได้ตามปกติ
 - ผู้ที่ต้องการ LINE notification ควรติดต่อ iTopPlus เพื่อสอบถาม LINE Messaging API แทน
+
+
+---
+
+## Feature: เพิ่ม Query String Limit เป็น 8192 (`feature/webconfig-raise-query-string-limit`)
+
+### What it does
+เพิ่ม `maxQueryString="8192"` ใน IIS request filtering (`<requestLimits>`) ของ `Web.config.tpl` และปรับ attribute บน `<httpRuntime>` (diff ตัดตรงท้ายบรรทัด ไม่เห็นค่าเต็ม) เพื่อให้ URL ที่มี query string ยาวไม่ถูกปฏิเสธ
+
+### วิธีเข้าถึง
+- ไม่มีหน้า admin / ไม่มี field — เป็น server config (deploy-time)
+
+### Fields
+| Field (EN/TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| `maxQueryString` | IIS attribute | `8192` ใน `<requestLimits maxAllowedContentLength="2147483647" maxQueryString="8192" />` | ไม่ใช่ setting ของ tenant — ใช้กับทุก domain |
+
+### Wired in (developers)
+- `Boy_Growth_a_Man/Web.config.tpl` (`Web.config` จริงอยู่ใน .gitignore — แก้ที่ `.tpl` เท่านั้น); `Boy_Growth_a_Man/CLAUDE.md` เพิ่มหมายเหตุนี้
+
+### Gotchas
+- ต้อง deploy/regenerate `Web.config` จาก `.tpl` ถึงจะมีผล

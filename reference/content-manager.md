@@ -583,3 +583,63 @@ Content.bUseDisplayDate && Content.displayDate > 0
 - **View:** ไม่มี markup พิเศษ — popup สร้างใน JS ล้วน (`document.createElement('div')`)
 - **CSS:** `.paste-options-popup`, `.paste-opt-btn` — defined inline ใน controller หรือ scoped style
 - **Commits:** `9f053763f` (feat: replace confirm with popup), `50af3d9e6` + `4df6e7473` (fix: paste logic refinements)
+
+
+---
+
+## Feature: เลย์เอาต์หมวดหมู่ + แท็ก (Category + Tag Filter, templateID 56) (`feature/contentmanager-category-tags-layout`)
+
+### What it does
+เพิ่ม layout ใหม่ใน Content Manager (ชื่อใน dropdown: "รูปแบบหมวดหมู่ + แท็ก" / "Category + tag filter", `templateID = 56`) — แสดงปุ่มหมวดหมู่ด้านบน, แถบ filter ด้านซ้าย (ช่องค้นหา + แท็กจัดกลุ่มตาม MainTag พร้อมจำนวน), และ grid การ์ดคอนเทนต์ด้านขวา โหลดคอนเทนต์ของทุกหมวดครั้งเดียว (สูงสุด 500 ต่อหมวด) แล้วกรอง/แบ่งหน้าในเบราว์เซอร์
+
+### วิธีเข้าถึง
+- Route: `https://demo110.itopplus.com/?manage=true#!/<page>` → คลิกคอมโพเนนต์ Content Manager → ตั้งค่า (ContentConfig) → เลือก layout "รูปแบบหมวดหมู่ + แท็ก"
+- Sidebar/ปุ่ม: เมนูคอมโพเนนต์ในหน้า (layout editor) → Content Manager → Config
+
+### Fields
+| Field EN (TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| Show the advanced search box (แสดงช่องค้นหาแบบละเอียดเหนือแท็ก) | checkbox `bShowFilterSearch` | แสดง/ซ่อนช่องค้นหาชื่อเรื่องเหนือรายการแท็ก | ค่าที่ไม่เคยตั้ง (undefined) ถือเป็น "แสดง" |
+| Contents per row (จำนวน content ต่อแถว 1-6) | number `contentPerRow` | กำหนดจำนวนคอลัมน์ของ grid | บันทึกถูก clamp 1-6, ค่าเริ่มต้น 4; จอ <992px = 2 คอลัมน์, <576px = 1 |
+| Tags to show (แท็กที่ต้องการแสดง) | checkbox list `filterTags[]` (`MainTag`,`UnitTag`) | เลือกแท็กที่จะโชว์ในแถบซ้าย จัดกลุ่มตาม MainTag | ไม่เลือกเลย = ไม่แสดงแถบแท็ก; ถ้าไม่มีแท็กในระบบจะขึ้น "ยังไม่มีแท็กในระบบ" |
+| Categories (หมวดหมู่) | เลือกจากรายการหมวดเดิมของ Content Manager | แต่ละหมวดกลายเป็นปุ่มด้านบน เรียงตาม `cateOrdernumber` | ช่อง sort/จำนวนต่อหน้าแบบเดิมถูกซ่อนสำหรับ layout นี้ |
+
+พฤติกรรมฝั่งผู้เข้าชม: หมวดที่เลือกหลายอัน = OR, แท็กที่เลือกหลายอัน = AND, ไม่เลือก = ไม่จำกัด; มีปุ่ม "ล้างตัวกรอง", "เพิ่มการแสดงผล..." (แสดงแท็กกลุ่มละ 5 ก่อน) และข้อความ "ไม่พบเนื้อหาที่ตรงกับเงื่อนไข"
+
+### Wired in (for developers)
+- **Model:** `Boy_Growth_a_Man/Boy_Growth_a_Man/Models/Contentmanager/Contentmanager.cs` — `bShowFilterSearch` (bool?), `contentPerRow`, `filterTags` (`List<FilterTagConfig>` : `MainTag`,`UnitTag`)
+- **Controller:** `Boy_Growth_a_Man/Boy_Growth_a_Man/ScriptRequire/Component/Contentmanager/Controller.js` — `initCategoryTagTemplate`, `toggleShowFilterSearch`, `changeContentPerRow`, `toggleFilterTag`, `loadFilterTagOptions`; save ผ่าน `saveContentmanagerTabPerCategories`
+- **Domain logic (มี unit test):** `Boy_Growth_a_Man/Boy_Growth_a_Man/ScriptRequire/domains/components/contentmanager.domain.js` — `filterCategoryTagContents`, `buildFilterTagGroups`, `paginateList`
+- **Views:** `Boy_Growth_a_Man/Boy_Growth_a_Man/Views/Component/Contentmanager/ContentConfig.cshtml` (config + preview), `.../template/TemplateCategoryTag.cshtml` (ใหม่), `.../template/TemplateMain.cshtml` (render เมื่อ templateID == 56); เพิ่มไฟล์ใน `.csproj`
+
+### Gotchas
+- แท็กที่มี `+` ถูกเก็บเป็น `_Pls_` — โค้ดแปลงกลับก่อนเทียบ
+- โหลดสูงสุด 500 รายการต่อหมวด — หมวดที่คอนเทนต์เยอะกว่านี้จะไม่ครบ
+- รายการที่ปิดใช้งาน (`bEnable = false`) ถูกตัดออก และคอนเทนต์ที่อยู่หลายหมวดจะถูกรวมเป็นชิ้นเดียว
+
+---
+
+## Feature: บล็อกรูป "สไลด์พร้อมแกลอรี่รูปเล็ก" (Slide with Gallery Thumbnails) (`feature/contentmanager-block-slide-gallery-mode`)
+
+### What it does
+เพิ่มรูปแบบรูปภาพใหม่ `imgType = 12` "Slide with Gallery Thumbnails" (TH: รูปแบบ สไลด์พร้อมแกลอรี่รูปเล็ก) ใน Image component และปรับ block รูป "Slide with Thumbnails" (`imgType = 7`, TH: รูปแบบ สไลด์พร้อมรูปเล็ก) ในเนื้อหา Content Manager ให้เป็น carousel แบบเดียวกับ Slide พร้อมรูปเล็กด้านล่างเป็น indicator; ติ๊ก zoom เพื่อให้คลิกรูปเปิด popup (fancybox, ไม่มี effect)
+
+### วิธีเข้าถึง
+- Image component: `?manage=true#!/<page>` → คลิกคอมโพเนนต์รูปภาพ → เลือก layout "สไลด์พร้อมแกลอรี่รูปเล็ก"
+- Content Manager block: แก้คอนเทนต์ → เพิ่ม block ใหม่ (modalContentNewBlock) → ประเภทรูป "Slide with Thumbnails"
+
+### Fields
+| Field EN (TH) | Type | Effect | Gotchas |
+|---|---|---|---|
+| Image type (รูปแบบรูป) = 12 / 7 | thumbnail chooser / dropdown | เลือก carousel + thumbnail indicators | type 12 ใช้ใน Image component; type 7 ใช้ใน block ของ Content Manager |
+| Zoom / lightbox (ซูม) | checkbox `imgLightbox` | คลิกรูปเปิด popup fancybox | ตอนนี้ checkbox แสดงสำหรับ imgType 7 ด้วย (เดิมมีเฉพาะ 1,2,3,5,6) |
+| Image effect (เอฟเฟกต์) | ตัวเลือกเดิม | ใช้ได้กับ type 12 เหมือน type 7/9/10 | |
+
+### Wired in (for developers)
+- **JS:** `Boy_Growth_a_Man/Boy_Growth_a_Man/ScriptRequire/Component/Contentmanager/Controller.js` (`openSlideGalleryPopup`), `Boy_Growth_a_Man/Boy_Growth_a_Man/ScriptRequire/Component/Images/Controller.js` (เพิ่ม case 12 ในจุดที่เช็ค 1/7/9/10)
+- **Views:** `Views/Component/Images/Image.cshtml`, `Views/Component/Images/ImageConfig.cshtml`, `Views/Component/Contentmanager/ContentManager.cshtml`, `template/TemplateMain.cshtml`, `template/TemplateLandingPage.cshtml`, `Views/Management/ViewContent.cshtml`, `Views/Management/Contentmanager/modalContentNewBlock.cshtml`
+- **Bundled fixes:** `Models/HtmlHelperExtensions.cs` (`ImagePath` ที่ไม่มี extension คืน path เดิม ไม่ crash), ใช้ `ng-src` แทน `src` ใน gallery
+
+### Gotchas
+- Popup เปิดเฉพาะเมื่อติ๊ก zoom และมีรูปอย่างน้อย 1 รูป; รูปเรียงตาม `imageOrder`
+
