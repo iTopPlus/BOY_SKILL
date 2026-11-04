@@ -51,6 +51,7 @@ Do not answer admin-backend questions before reading `SKILL.md` and the relevant
 | Domain settings, languages, multi-language | `reference/domain-language.md` |
 | 360 Image, Custom Booking, Digital Business Hub, Jewelry, E-SIM | `reference/specialized-modules.md` |
 | Doing something via the Open API / MCP / AI connector, not just explaining the UI | `reference/open-api-integration.md` |
+| Open API / API key / REST API / MCP / connect an AI assistant to the site / Help center | `reference/open-api.md` |
 
 ## Conventions (apply to every answer)
 

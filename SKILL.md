@@ -53,6 +53,7 @@ any tenant's own domain.
 | Domain settings, languages, add a language, multi-language | `reference/domain-language.md` |
 | 360 Image, Custom Booking, Digital Business Hub, Jewelry, E-SIM | `reference/specialized-modules.md` |
 | Doing something via the Open API / MCP / AI connector, not just explaining the UI | `reference/open-api-integration.md` |
+| Open API / API key / REST API / MCP / connect an AI assistant (Claude, Claude Code, Codex, Cursor, VS Code, Gemini) to the site / `itopplus-open-api` / Help center `#!/api-docs` | `reference/open-api.md` |
 
 ## When the skill can't answer (escalation)
 

@@ -40,6 +40,7 @@ Labels come from `ScriptRequire/domains/language/menu-by-language/menuSlideBarNa
 | SEO Settings | ตั้งค่า SEO | `seo.md` |
 | META Tag Settings | ตั้งค่า META Tag | `seo.md` |
 | CSS Settings | ตั้งค่า CSS | `web-config.md` |
+| Open API+AI (beta) | Open API+AI (beta) | `open-api.md` |
 
 > Note: **SEO / META Tag / CSS / PDPA** are tabs *inside* the Website Settings panel
 > (`Views/Theme/5Options.cshtml`), not separate sidebar destinations. SEO also exists
@@ -154,6 +155,14 @@ See `store-shopcart.md`.
 | E-SIM — Settings / Countries / Commodities / Orders | `#!/EsimSettings`, `#!/EsimCountry`, `#!/EsimCommodity`, `#!/EsimOrders` |
 
 See `specialized-modules.md`.
+
+**Open API+AI (beta)**
+
+| Screen | Route | Reference |
+|---|---|---|
+| API key settings + activity log | `#!/open-api-settings` | `open-api.md` |
+| Help center (topics: `?topic=start|mcp|api|skill`) | `#!/api-docs` | `open-api.md` |
+| REST base URL / MCP URL / OpenAPI spec (public URLs, not admin routes) | `/itopplus-open-api` · `/itopplus-open-api/mcp` · `/itopplus-open-api/openapi.json` | `open-api.md` |
 
 ---
 
