@@ -8,6 +8,8 @@ Lets an outside system or an **AI assistant** read and write this website's data
 
 Covers: Content Manager articles (read + write), Shopcart orders (read), website visitor statistics (read), and the API request log (read). Every key is bound to **one website** and to the **permissions** chosen when it was created. Beta: response shapes and endpoints may still change.
 
+> ⏳ **Pending, not yet released.** Items marked ⏳ below (category creation, `hasCoverImage`/`hasCategory` filters, `q` matching article body) are implemented and tested on a feature branch but **not yet merged to `develop`** — they are not live on any site yet. Remove the ⏳ markers and this note once that merge lands.
+
 ## How to get there
 - **Sidebar:** Advanced Settings (ตั้งค่าขั้นสูง) > Open API+AI (beta).
 - **Route (key settings):** `https://demo110.itopplus.com/?manage=true#!/open-api-settings`
@@ -86,12 +88,13 @@ Only calls that resolve to one of this site's keys are logged (including revoked
 ### Endpoints
 | Method & path | Scope | What it does |
 |---|---|---|
-| `GET /v1/contents` | `content:read` | List articles. Filters: `q` (title contains), `categoryId`, `published=true|false`, `languageId`, paging |
+| `GET /v1/contents` | `content:read` | List articles. Filters: `q` (title **or body** contains), `categoryId`, `published=true|false`, `languageId`, `hasCoverImage=true|false` ⏳, `hasCategory=true|false` ⏳, paging |
 | `POST /v1/contents` | `content:write` | Create an article (`title` required) → `201` with the article |
 | `GET /v1/contents/{id}` | `content:read` | One article (`languageId` optional) |
 | `PATCH /v1/contents/{id}` (or `PUT`) | `content:write` | **Partial** update — only fields sent change |
 | `DELETE /v1/contents/{id}` | `content:write` | Delete → `{ id, deleted: true }` |
 | `GET /v1/content-categories` | `content:read` | All article categories `{ id, name, parentId, image, order }` |
+| `POST /v1/content-categories` ⏳ | `content:write` | Create a category (`name` required; `parentId` must be an existing category on this site) → `201` with the category |
 | `GET /v1/orders` | `orders:read` | Orders, newest first. Filters: `paymentStatus`, `shippingStatus`, paging |
 | `GET /v1/orders/{id}` | `orders:read` | One order by Mongo id **or** order number (OID) |
 | `GET /v1/stats/summary` | `stats:read` | `{ allTime, today, last7Days, last30Days, devices }` |
@@ -111,6 +114,15 @@ Only calls that resolve to one of this site's keys are logged (including revoked
 | `languageId` | string | which language entry to write; defaults to the site's default language |
 
 Writes go through the same cache/search/ordering updates the admin editor uses, so the public site reflects them without a separate Apply step. A published article's response includes `id, title, subtitle, summary, body, coverImage, seo{…}, categoryIds, published, sticky, languages, views, createdAt, updatedAt`.
+
+### Category fields (`POST /v1/content-categories`) ⏳
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string ≤200 | required |
+| `parentId` | string | optional; must be an existing category **id on this site** — a category from another site or a made-up id is rejected with `400 validation_error` |
+| `image` | string | image URL, optional |
+
+Response: `{ id, name, parentId, image, order }`.
 
 ### Worked examples (ITOPPLUS)
 ```bash
@@ -155,7 +167,7 @@ Create the key → in the one-time reveal use **Copy MCP setup with key** → pi
 | Permission | Tools |
 |---|---|
 | `content:read` | `list_articles`, `get_article`, `list_article_categories` |
-| `content:write` | `create_article`, `update_article`, `delete_article` |
+| `content:write` | `create_article`, `update_article`, `delete_article`, `create_article_category` ⏳ |
 | `orders:read` | `list_orders`, `get_order` |
 | `stats:read` | `get_visitor_summary`, `get_daily_visitors` |
 | `logs:read` | `list_api_requests` |
